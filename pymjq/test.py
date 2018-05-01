@@ -46,6 +46,7 @@ class TestJobQueue(unittest.TestCase):
         jq.pub(job)
         row = jq.next()
         self.assertEquals(row['data']['message'], 'hello world!')
+        self.assertEquals(jq.queue_count(), 0)
 
     def test_iter(self):
         NUM_JOBS = 3

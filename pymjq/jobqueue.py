@@ -44,8 +44,8 @@ class JobQueue:
             raise Exception('Collection "jobqueue" already created')
 
     def _find_opts(self):
-        if hasattr(pymongo.CursorType, 'TAILABLE_AWAIT'):
-            return {'cursor_type': pymongo.CursorType.TAILABLE_AWAIT}
+        if hasattr(pymongo, 'CursorType'):
+            return {'cursor_type': pymongo.CursorType.TAILABLE_AWAIT}   # pylint: disable=no-member
         return {'Tailable': True}
 
     def _exists(self):
