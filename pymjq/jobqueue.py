@@ -61,18 +61,14 @@ class JobQueue:
 
     def next(self):
         """ Runs the next job in the queue. """
-        cursor = self.q.find({'status': self.WAITING},
-                             **self._find_opts())
-        if cursor:
-            row = cursor.next()
-            row['status'] = self.DONE
-            row['ts']['started'] = datetime.now()
-            row['ts']['done'] = datetime.now()
-            self.q.save(row)
-            try:
-                return row
-            except:
-                raise Exception('There are no jobs in the queue')
+        row = self.q.find_one_and_update({'status': self.WAITING},
+                                         {'$set':
+                                            {'status': self.DONE,
+                                             'ts.started': datetime.utcnow(),
+                                             'ts.done': datetime.utcnow()}})
+        if row:
+            return row
+        raise Exception('There are no jobs in the queue')
 
     def pub(self, data=None):
         """ Publishes a doc to the work queue. """
@@ -91,29 +87,22 @@ class JobQueue:
     def __iter__(self):
         """ Iterates through all docs in the queue
             andw aits for new jobs when queue is empty. """
-        cursor = self.q.find({'status': self.WAITING},
-                             **self._find_opts())
         get_next = True
         while get_next:
             try:
-                row = cursor.next()
-                try:
-                    self.q.update({'_id': row['_id'],
-                                   'status': self.WAITING},
-                                  {'$set': {
-                                       'status': self.WORKING,
-                                       'ts.started': datetime.now()
-                                       }
-                                   })
-                except pymongo.errors.OperationFailure:
-                    print ('Job Failed!!')
-                    continue
-                print ('---')
-                print ('Working on job:')
+                row = self.q.find_one_and_update(
+                    {'status': self.WAITING},
+                    {'$set':
+                     {'status': self.WORKING,
+                      'ts.started': datetime.now()}})
+                if row is None:
+                    raise Exception('There are no jobs in the queue')
+                print('---')
+                print('Working on job:')
                 yield row
-                row['status'] = self.DONE
-                row['ts']['done'] = datetime.now()
-                self.q.save(row)
+                self.q.update_one({'_id': row['_id']},
+                                  {'$set': {'status': self.DONE,
+                                            'ts.done': datetime.utcnow()}})
             except:
                 get_next = self.iterator_wait()
 
