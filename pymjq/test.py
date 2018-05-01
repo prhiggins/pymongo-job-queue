@@ -15,11 +15,13 @@ class TestJobQueue(unittest.TestCase):
         client.pymongo_test.jobqueue.drop()
         cls.db = client.pymongo_test
 
+    def tearDown(self):
+        self.db['jobqueue'].drop()
+
     def test_init(self):
         jq = JobQueue(self.db)
         self.assertTrue(jq.valid())
         self.assertRaises(Exception, jq._create)
-        jq.clear_queue()
 
     def test_valid(self):
         jq = JobQueue(self.db)
@@ -27,7 +29,6 @@ class TestJobQueue(unittest.TestCase):
         jq._create(capped=False)
         self.assertFalse(jq.valid())
         self.assertRaises(Exception, jq._create)
-        jq.clear_queue()
 
     def test_publish(self):
         jq = JobQueue(self.db)
@@ -45,19 +46,23 @@ class TestJobQueue(unittest.TestCase):
         jq.pub(job)
         row = jq.next()
         self.assertEquals(row['data']['message'], 'hello world!')
-        jq.clear_queue()
+        self.assertEquals(jq.queue_count(), 0)
 
-    # def test_iter(self):
-    #     jq = JobQueue(self.db)
-    #     job = {'message': 'hello world!'}
-    #     jq.pub(job)
-    #     for job in jq:
-    #         if job:
-    #             self.assertTrue(True, "Found job")
-    #             jq.clear_queue()
-    #             return
-    #     self.assertEquals(False, "No jobs found!")
-    #     jq.clear_queue()
+    def test_iter(self):
+        NUM_JOBS = 3
+        num_jobs_queued = [NUM_JOBS]
+        def iterator_wait():
+            num_jobs_queued[0] -= 1
+            return num_jobs_queued[0] < 0
+        jq = JobQueue(self.db, iterator_wait=iterator_wait)
+        for ii in range(1, NUM_JOBS + 1):
+            job = {'message': 'I am # ' + str(ii)}
+            jq.pub(job)
+        num_jobs_done = 0
+        for job in jq:
+            print job['data']['message']
+            num_jobs_done += 1
+        self.assertEquals(num_jobs_done, NUM_JOBS)
 
 
 if __name__ == '__main__':
