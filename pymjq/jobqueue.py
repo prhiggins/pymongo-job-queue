@@ -39,7 +39,7 @@ class JobQueue:
         try:
             self.db.create_collection('jobqueue',
                                       capped=capped, max=100000,
-                                      size=100000, autoIndexId=True)
+                                      size=100000)
         except:
             raise Exception('Collection "jobqueue" already created')
 
@@ -61,7 +61,11 @@ class JobQueue:
 
     def next(self):
         """ Runs the next job in the queue. """
-        row = self.q.find_one_and_update({'status': self.WAITING},
+        cursor = self.q.find({'status': self.WAITING},
+                             **self._find_opts())
+        row = cursor.next()
+        row = self.q.find_one_and_update({'_id': row['_id'],
+                                          'status': self.WAITING},
                                          {'$set':
                                             {'status': self.DONE,
                                              'ts.started': datetime.utcnow(),
@@ -86,12 +90,16 @@ class JobQueue:
 
     def __iter__(self):
         """ Iterates through all docs in the queue
-            andw aits for new jobs when queue is empty. """
+            and waits for new jobs when queue is empty. """
+        cursor = self.q.find({'status': self.WAITING},
+                             **self._find_opts())
         get_next = True
-        while get_next:
+        while cursor.alive and get_next:
             try:
+                row = cursor.next()
                 row = self.q.find_one_and_update(
-                    {'status': self.WAITING},
+                    {'_id': row['_id'],
+                     'status': self.WAITING},
                     {'$set':
                      {'status': self.WORKING,
                       'ts.started': datetime.now()}})
@@ -103,7 +111,7 @@ class JobQueue:
                 self.q.update_one({'_id': row['_id']},
                                   {'$set': {'status': self.DONE,
                                             'ts.done': datetime.utcnow()}})
-            except:
+            except StopIteration:
                 get_next = self.iterator_wait()
 
     def queue_count(self):
