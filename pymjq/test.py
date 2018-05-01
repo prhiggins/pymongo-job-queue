@@ -60,8 +60,10 @@ class TestJobQueue(unittest.TestCase):
             jq.pub(job)
         num_jobs_done = 0
         for job in jq:
-            print job['data']['message']
+            #print job['data']['message']
             num_jobs_done += 1
+            record = jq.q.find_one({'_id': job['_id']})
+            self.assertEquals(record['status'], jq.WORKING)
         self.assertEquals(num_jobs_done, NUM_JOBS)
 
 
