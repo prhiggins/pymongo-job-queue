@@ -5,11 +5,17 @@ import time
 
 class JobQueue:
 
+    # Capped collection documents can not have its size updated
+    # https://docs.mongodb.com/manual/core/capped-collections/#document-size
+    DONE = 'done'.ljust(10, '_')
+    WAITING = 'waiting'.ljust(10, '_')
+    WORKING = 'working'.ljust(10, '_')
+
     def __init__(self, db, silent=False):
         """ Return an instance of a JobQueue.
         Initialization requires one argument, the database,
         since we use one jobqueue collection to cover all
-        sites in an installation/database. The second 
+        sites in an installation/database. The second
         argument specifies if to print status while waiting
         for new job, the default value is False"""
         self.db = db
@@ -42,11 +48,11 @@ class JobQueue:
 
     def next(self):
         """ Runs the next job in the queue. """
-        cursor = self.q.find({'status': 'waiting'},
+        cursor = self.q.find({'status': self.WAITING},
                              tailable=True)
         if cursor:
             row = cursor.next()
-            row['status'] = 'done'
+            row['status'] = self.DONE
             row['ts']['started'] = datetime.now()
             row['ts']['done'] = datetime.now()
             self.q.save(row)
@@ -61,7 +67,7 @@ class JobQueue:
             ts={'created': datetime.now(),
                 'started': datetime.now(),
                 'done': datetime.now()},
-            status='waiting',
+            status=self.WAITING,
             data=data)
         try:
             self.q.insert(doc, manipulate=False)
@@ -72,15 +78,15 @@ class JobQueue:
     def __iter__(self):
         """ Iterates through all docs in the queue
             andw aits for new jobs when queue is empty. """
-        cursor = self.q.find({'status': 'waiting'}, tailable=True)
+        cursor = self.q.find({'status': self.WAITING}, tailable=True)
         while 1:
             try:
                 row = cursor.next()
                 try:
                     result = self.q.update({'_id': row['_id'],
-                                            'status': 'waiting'},
+                                            'status': self.WAITING},
                                            {'$set': {
-                                                'status': 'working',
+                                                'status': self.WORKING,
                                                 'ts.started': datetime.now()
                                                 }
                                             })
@@ -90,7 +96,7 @@ class JobQueue:
                 print ('---')
                 print ('Working on job:')
                 yield row
-                row['status'] = 'done'
+                row['status'] = self.DONE
                 row['ts']['done'] = datetime.now()
                 self.q.save(row)
             except:
@@ -100,7 +106,7 @@ class JobQueue:
 
     def queue_count(self):
         """ Returns the number of jobs waiting in the queue. """
-        cursor = self.q.find({'status': 'waiting'})
+        cursor = self.q.find({'status': self.WAITING})
         if cursor:
             return cursor.count()
 
