@@ -77,9 +77,9 @@ class JobQueue:
     def pub(self, data=None):
         """ Publishes a doc to the work queue. """
         doc = dict(
-            ts={'created': datetime.now(),
-                'started': datetime.now(),
-                'done': datetime.now()},
+            ts={'created': datetime.utcnow(),
+                'started': datetime.utcnow(),
+                'done': datetime.utcnow()},
             status=self.WAITING,
             data=data)
         try:
@@ -102,7 +102,7 @@ class JobQueue:
                      'status': self.WAITING},
                     {'$set':
                      {'status': self.WORKING,
-                      'ts.started': datetime.now()}})
+                      'ts.started': datetime.utcnow()}})
                 if row is None:
                     raise Exception('There are no jobs in the queue')
                 print('---')
