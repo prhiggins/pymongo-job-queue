@@ -11,7 +11,7 @@ class JobQueue:
     WAITING = 'waiting'.ljust(10, '_')
     WORKING = 'working'.ljust(10, '_')
 
-    def __init__(self, db, silent=False, iterator_wait=None):
+    def __init__(self, db, silent=False, iterator_wait=None, size=None):
         """ Return an instance of a JobQueue.
         Initialization requires one argument, the database,
         since we use one jobqueue collection to cover all
@@ -21,25 +21,31 @@ class JobQueue:
         self.db = db
         if not self._exists():
             print ('Creating jobqueue collection.')
-            self._create()
+            self._create(size)
         self.q = self.db['jobqueue']
         self.iterator_wait = iterator_wait
         if self.iterator_wait is None:
             def deafult_iterator_wait():
-                time.sleep(5)
                 if not silent:
                     print ('waiting!')
+                time.sleep(5)
                 return True
 
             self.iterator_wait = deafult_iterator_wait
 
-    def _create(self, capped=True):
+    def _create(self, size, capped=True):
         """ Creates a Capped Collection. """
-        # TODO - does the size parameter mean number of docs or bytesize?
         try:
+            # size - When creating a capped collection you must specify the maximum size
+            #        of the collection in bytes, which MongoDB will pre-allocate for the
+            #        collection. The size of the capped collection includes a small amount
+            #        of space for internal overhead.
+            # max - you may also specify a maximum number of documents for the collection
+            if not size:
+                size = 100000
             self.db.create_collection('jobqueue',
-                                      capped=capped, max=100000,
-                                      size=100000)
+                                      capped=capped,
+                                      size=size)
         except:
             raise Exception('Collection "jobqueue" already created')
 
@@ -94,7 +100,10 @@ class JobQueue:
         cursor = self.q.find({'status': self.WAITING},
                              **self._find_opts())
         get_next = True
-        while cursor.alive and get_next:
+        while get_next:
+            if not cursor.alive:
+                cursor = self.q.find({'status': self.WAITING},
+                                     **self._find_opts())
             try:
                 row = cursor.next()
                 row = self.q.find_one_and_update(
