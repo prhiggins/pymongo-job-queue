@@ -33,7 +33,7 @@ class JobQueue:
 
             self.iterator_wait = deafult_iterator_wait
 
-    def _create(self, size, capped=True):
+    def _create(self, size=None, capped=True):
         """ Creates a Capped Collection. """
         try:
             # size - When creating a capped collection you must specify the maximum size
