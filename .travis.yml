@@ -6,6 +6,6 @@ services: mongodb
 install: "pip install -r requirements.txt"
 # # command to run tests
 script:
-  - coverage run pymjq/test.py
+  - coverage run pymjq/test_jobqueue.py
 
 after_success: codecov

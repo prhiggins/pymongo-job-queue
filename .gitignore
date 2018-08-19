@@ -27,6 +27,7 @@ pip-log.txt
 .tox
 nosetests.xml
 tmp
+.pytest_cache
 
 # Translations
 *.mo
@@ -34,3 +35,4 @@ tmp
 # Code editor
 *~
 venv/*
+.vscode
