@@ -11,7 +11,7 @@ class JobQueue:
     WAITING = 'waiting'.ljust(10, '_')
     WORKING = 'working'.ljust(10, '_')
 
-    def __init__(self, db, silent=False, iterator_wait=None, size=None):
+    def __init__(self, db, silent=False, iterator_wait=None, size=None, collection_name='jobqueue'):
         """ Return an instance of a JobQueue.
         Initialization requires one argument, the database,
         since we use one jobqueue collection to cover all
@@ -19,10 +19,11 @@ class JobQueue:
         argument specifies if to print status while waiting
         for new job, the default value is False"""
         self.db = db
+        self.collection_name = collection_name
         if not self._exists():
-            print ('Creating jobqueue collection.')
+            print ('Creating "{}" collection.'.format(self.collection_name))
             self._create(size)
-        self.q = self.db['jobqueue']
+        self.q = self.db[self.collection_name]
         self.iterator_wait = iterator_wait
         if self.iterator_wait is None:
             def deafult_iterator_wait():
@@ -43,11 +44,11 @@ class JobQueue:
             # max - you may also specify a maximum number of documents for the collection
             if not size:
                 size = 100000
-            self.db.create_collection('jobqueue',
+            self.db.create_collection(self.collection_name,
                                       capped=capped,
                                       size=size)
         except:
-            raise Exception('Collection "jobqueue" already created')
+            raise Exception('Collection "{}" already created'.format(self.collection_name))
 
     def _find_opts(self):
         if hasattr(pymongo, 'CursorType'):
@@ -56,11 +57,11 @@ class JobQueue:
 
     def _exists(self):
         """ Ensures that the jobqueue collection exists in the DB. """
-        return 'jobqueue' in self.db.collection_names()
+        return self.collection_name in self.db.collection_names()
 
     def valid(self):
         """ Checks to see if the jobqueue is a capped collection. """
-        opts = self.db['jobqueue'].options()
+        opts = self.db[self.collection_name].options()
         if opts.get('capped', False):
             return True
         return False
