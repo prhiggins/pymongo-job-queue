@@ -19,15 +19,17 @@ class JobQueue:
         argument specifies if to print status while waiting
         for new job, the default value is False"""
         self.db = db
+        self.silent = silent
         self.collection_name = collection_name
         if not self._exists():
-            print ('Creating "{}" collection.'.format(self.collection_name))
+            if not silent:
+                print ('Creating "{}" collection.'.format(self.collection_name))
             self._create(size)
         self.q = self.db[self.collection_name]
         self.iterator_wait = iterator_wait
         if self.iterator_wait is None:
             def deafult_iterator_wait():
-                if not silent:
+                if not self.silent:
                     print ('waiting!')
                 time.sleep(5)
                 return True
@@ -115,8 +117,9 @@ class JobQueue:
                       'ts.started': datetime.utcnow()}})
                 if row is None:
                     raise Exception('There are no jobs in the queue')
-                print('---')
-                print('Working on job:')
+                if not self.silent:
+                    print('---')
+                    print('Working on job:')
                 yield row
                 self.q.update_one({'_id': row['_id']},
                                   {'$set': {'status': self.DONE,
