@@ -69,7 +69,7 @@ class JobQueue:
     def next(self):
         """ Runs the next job in the queue. """
         cursor = self.q.find({'status': self.WAITING},
-                             **self._find_opts())
+                             **self._find_opts()).limit(1)
         row = cursor.next()
         row = self.q.find_one_and_update({'_id': row['_id'],
                                           'status': self.WAITING},
@@ -99,12 +99,12 @@ class JobQueue:
         """ Iterates through all docs in the queue
             and waits for new jobs when queue is empty. """
         cursor = self.q.find({'status': self.WAITING},
-                             **self._find_opts())
+                             **self._find_opts()).limit(1)
         get_next = True
         while get_next:
             if not cursor.alive:
                 cursor = self.q.find({'status': self.WAITING},
-                                     **self._find_opts())
+                                     **self._find_opts()).limit(1)
             try:
                 row = cursor.next()
                 row = self.q.find_one_and_update(
