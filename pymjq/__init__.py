@@ -5,4 +5,4 @@ __url__ = 'https://github.com/discogs/pymongo-job-queue'
 __author__ = 'Andy Craze'
 __email__ = 'acraze@discogsinc.com'
 
-from jobqueue import JobQueue
+from pymjq.jobqueue import JobQueue
