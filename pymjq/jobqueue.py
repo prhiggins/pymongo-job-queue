@@ -127,6 +127,15 @@ class JobQueue:
             except StopIteration:
                 get_next = self.iterator_wait()
 
+            except:
+                row = self.q.find_one_and_update(
+                    {'_id': row['_id'],
+                     'status': self.WORKING},
+                    {'$set':
+                     {'status': self.WAITING}})
+                raise
+
+
     def queue_count(self):
         """ Returns the number of jobs waiting in the queue. """
         cursor = self.q.find({'status': self.WAITING})
