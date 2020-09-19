@@ -115,15 +115,14 @@ class JobQueue:
                     {'$set':
                      {'status': self.WORKING,
                       'ts.started': datetime.utcnow()}})
-                if row is None:
-                    raise Exception('There are no jobs in the queue')
-                if not self.silent:
-                    print('---')
-                    print('Working on job:')
-                yield row
-                self.q.update_one({'_id': row['_id']},
-                                  {'$set': {'status': self.DONE,
-                                            'ts.done': datetime.utcnow()}})
+                if row:
+                    if not self.silent:
+                        print('---')
+                        print('Working on job:')
+                    yield row
+                    self.q.update_one({'_id': row['_id']},
+                                      {'$set': {'status': self.DONE,
+                                                'ts.done': datetime.utcnow()}})
             except StopIteration:
                 get_next = self.iterator_wait()
 
