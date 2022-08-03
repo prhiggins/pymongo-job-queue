@@ -92,7 +92,7 @@ class JobQueue:
             status=self.WAITING,
             data=data)
         try:
-            self.q.insert_one(doc, manipulate=False)
+            self.q.insert_one(doc)
         except:
             raise Exception('could not add to queue')
         return True
