@@ -1,13 +1,8 @@
-# pymongo-job-queue [![travis build](https://img.shields.io/travis/xverges/pymongo-job-queue.svg)](https://travis-ci.org/xverges/pymongo-job-queue) [![Codecov](https://img.shields.io/codecov/c/github/xverges/pymongo-job-queue.svg)](https://codecov.io/github/xverges/pymongo-job-queue)
+# pymongo-job-queue
 
 This package (`pymjq`) is a simple MongoDB based job queue for Python. By using capped collections and tailable cursors, you can queue up data to be consumed by a service worker in order to process your long running tasks asynchronously.
 
-~~This is currently used to send notifications on the Meta sites (a.k.a. Vinylhub, Bibliogs, Filmogs, Gearogs, Comicogs and the Reference Wiki).~~ This is a fork of the original package adapted to work with pymongo 3+ and to enable custom collection names.
-
-#### Dependencies
-* mongodb 2.6
-* pymongo 2.7.2
-* python 2.7
+~~This is currently used to send notifications on the Meta sites (a.k.a. Vinylhub, Bibliogs, Filmogs, Gearogs, Comicogs and the Reference Wiki).~~ This is a fork of the original package adapted to work with pymongo 4.2+ and to enable custom collection names.
 
 ### Install
 
